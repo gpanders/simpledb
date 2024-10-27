@@ -1,3 +1,5 @@
+package simpleclient;
+
 import simpledb.tx.Transaction;
 import simpledb.plan.Plan;
 import simpledb.plan.Planner;

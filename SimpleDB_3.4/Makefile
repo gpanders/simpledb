@@ -15,10 +15,10 @@ clean:
 server: $(SERVER_DIR)/simpledb/server/StartServer.class
 
 .PHONY: clients
-clients: $(patsubst simpleclient/%.java,$(CLIENT_DIR)/%.class,$(CLIENTS))
+clients: $(patsubst %.java,$(CLIENT_DIR)/%.class,$(CLIENTS))
 
 $(SERVER_DIR)/simpledb/server/StartServer.class: $(wildcard simpledb/server/*.java)
 	$(JAVAC) -d $(SERVER_DIR) $^
 
-$(CLIENT_DIR)/%.class: simpleclient/%.java
+$(CLIENT_DIR)/%.class: %.java
 	$(JAVAC) -d $(CLIENT_DIR) $^

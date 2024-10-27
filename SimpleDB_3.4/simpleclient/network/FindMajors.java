@@ -1,4 +1,4 @@
-package network;
+package simpleclient.network;
 import java.sql.*;
 import java.util.Scanner;
 

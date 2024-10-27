@@ -1,3 +1,5 @@
+package simpleclient;
+
 import java.sql.*;
 import java.util.Scanner;
 import simpledb.jdbc.embedded.EmbeddedDriver;

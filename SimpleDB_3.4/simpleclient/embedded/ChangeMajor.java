@@ -1,4 +1,5 @@
-package embedded;
+package simpleclient.embedded;
+
 import java.sql.*;
 import simpledb.jdbc.embedded.EmbeddedDriver;
 
