@@ -1,24 +1,16 @@
 JAVAC = javac
-SERVER_DIR = bin/server
-CLIENT_DIR = bin/client
-
-CLIENTS := $(wildcard simpleclient/*.java simpleclient/**/*.java)
+OUTDIR = build
+TARGETS := $(wildcard simpleclient/*.java simpleclient/**/*.java simpledb/**/*Test.java)
 
 .PHONY: all
-all: server clients
+all: targets
 
 .PHONY: clean
 clean:
-	find bin -name '*.class' -delete
+	find $(OUTDIR) -name '*.class' -delete
 
-.PHONY: server
-server: $(SERVER_DIR)/simpledb/server/StartServer.class
+.PHONY: targets
+targets: $(patsubst %.java,$(OUTDIR)/%.class,$(TARGETS))
 
-.PHONY: clients
-clients: $(patsubst %.java,$(CLIENT_DIR)/%.class,$(CLIENTS))
-
-$(SERVER_DIR)/simpledb/server/StartServer.class: $(wildcard simpledb/server/*.java)
-	$(JAVAC) -d $(SERVER_DIR) $^
-
-$(CLIENT_DIR)/%.class: %.java
-	$(JAVAC) -d $(CLIENT_DIR) $^
+$(OUTDIR)/%.class: %.java
+	$(JAVAC) -d $(OUTDIR) $^
