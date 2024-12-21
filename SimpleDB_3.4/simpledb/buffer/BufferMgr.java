@@ -1,5 +1,12 @@
 package simpledb.buffer;
 
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.NoSuchElementException;
+
 import simpledb.file.*;
 import simpledb.log.LogMgr;
 
@@ -9,8 +16,8 @@ import simpledb.log.LogMgr;
  *
  */
 public class BufferMgr {
-   private Buffer[] bufferpool;
-   private int numAvailable;
+   private Deque<Buffer> unpinned;
+   private Map<BlockId, Buffer> map;
    private static final long MAX_TIME = 10000; // 10 seconds
    
    /**
@@ -21,10 +28,23 @@ public class BufferMgr {
     * @param numbuffs the number of buffer slots to allocate
     */
    public BufferMgr(FileMgr fm, LogMgr lm, int numbuffs) {
-      bufferpool = new Buffer[numbuffs];
-      numAvailable = numbuffs;
-      for (int i=0; i<numbuffs; i++)
-         bufferpool[i] = new Buffer(fm, lm);
+      unpinned = new LinkedList<>();
+      for (int i=0; i<numbuffs; i++) {
+         unpinned.add(new Buffer(fm, lm, i));
+      }
+      map = new HashMap<>();
+   }
+
+   public void printStatus() {
+      System.out.println("Buffers and their Contents:");
+      for (Buffer buff : map.values()) {
+         System.out.printf("Buffer %d: %s %s\n", buff.getId(), buff.block().toString(), buff.isPinned() ? "pinned" : "unpinned");
+      }
+      System.out.print("Unpinned Buffers in LRU order:");
+      for (Buffer buff : unpinned) {
+         System.out.printf(" %d", buff.getId());
+      }
+      System.out.print("\n");
    }
    
    /**
@@ -32,7 +52,7 @@ public class BufferMgr {
     * @return the number of available buffers
     */
    public synchronized int available() {
-      return numAvailable;
+      return unpinned.size();
    }
    
    /**
@@ -40,9 +60,11 @@ public class BufferMgr {
     * @param txnum the transaction's id number
     */
    public synchronized void flushAll(int txnum) {
-      for (Buffer buff : bufferpool)
-         if (buff.modifyingTx() == txnum)
-         buff.flush();
+      for (Buffer buff : map.values()) {
+         if (buff.isPinned() && buff.modifyingTx() == txnum) {
+            buff.flush();
+         }
+      }
    }
    
    
@@ -54,7 +76,7 @@ public class BufferMgr {
    public synchronized void unpin(Buffer buff) {
       buff.unpin();
       if (!buff.isPinned()) {
-         numAvailable++;
+         unpinned.add(buff);
          notifyAll();
       }
    }
@@ -103,27 +125,23 @@ public class BufferMgr {
          buff = chooseUnpinnedBuffer();
          if (buff == null)
             return null;
+         map.remove(buff.block());
          buff.assignToBlock(blk);
+         map.put(blk, buff);
       }
-      if (!buff.isPinned())
-         numAvailable--;
       buff.pin();
       return buff;
    }
    
    private Buffer findExistingBuffer(BlockId blk) {
-      for (Buffer buff : bufferpool) {
-         BlockId b = buff.block();
-         if (b != null && b.equals(blk))
-            return buff;
-      }
-      return null;
+      return map.get(blk);
    }
    
    private Buffer chooseUnpinnedBuffer() {
-      for (Buffer buff : bufferpool)
-         if (!buff.isPinned())
-         return buff;
-      return null;
+      try {
+         return unpinned.pop();
+      } catch (NoSuchElementException e) {
+         return null;
+      }
    }
 }
